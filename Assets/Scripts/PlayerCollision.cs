@@ -4,50 +4,64 @@ using UnityEngine;
 
 public class PlayerCollision : MonoBehaviour
 {
-    PlayerController controls;
     Color rayColor = new Color(1, 0, 0);
-    Vector3 pos;
-    public Vector3 endLocal = new Vector3(0,1,0);
-    Vector3 cont = new Vector3(0,1.5f,0);
-    Vector3 norm = new Vector3(0,1,0);
-    Vector3 vel = new Vector3(0, -1, 0);
+    PlayerController controls;
+    Collider coll;
 
-    Vector3 debugRay;
+    
+    public float grav = 1;
+    public float collisionRes = 5;
+    public float rayOffset = 0.5f;
 
-    public float nDotg = 1;
+    private float spacing;
 
-    public Collider coll;
+    public Vector3 velocity = new Vector3(0,0,0);
+    private Vector3 position;
 
     void Start()
     {
         controls = GetComponent<PlayerController>();
-        pos = transform.position;
         coll = GetComponent<Collider>();
-        coll.attachedRigidbody.useGravity = true;
+        spacing = 2 * rayOffset / collisionRes;
     }
 
     void FixedUpdate()
     {
-        pos = transform.position;
-        nDotg = Vector3.Dot(vel, norm);
-        Debug.DrawLine(pos, pos+2*cont, rayColor);
+        position = transform.position;
 
+        velocity += Gravity(velocity.y);
+        transform.position += velocity;
+           
     }
 
-    private void OnCollisionStay(Collision collision)
-    {
-        foreach (ContactPoint contact in collision.contacts)
-        {
-            //this will give position of collision
-            cont = contact.point-pos;
-            //this gives normal of surface
-            norm = contact.normal;
-        }
+    Vector3 Gravity(float y) {
+        RaycastHit hit;
+        Ray ray;
+        Vector3 origin = position + new Vector3(-1,-1,-1)* rayOffset;
+        float yMag = Mathf.Abs(y) + grav*Time.deltaTime;
+        float smallestValue = yMag;
         
+        for (int i = 0; i <= collisionRes; i++) {
+            for (int j = 0; j <= collisionRes; j++) {
+                ray = new Ray(origin + (new Vector3(j, 0, i)*spacing), Vector3.down);
+                Physics.Raycast(ray, out hit);
+                if (hit.distance < smallestValue) smallestValue = hit.distance;
+
+                Debug.DrawRay (origin + (new Vector3(j, 0, i) * spacing), Vector3.down, rayColor);
+            }
+        }
+        Debug.Log("smallest Value: "+ smallestValue + "\t yMag:" + yMag);
+
+        if (smallestValue < 0.001f)
+        {
+            return Vector3.down * -1 * Mathf.Abs(y);
+        }
+        else if (smallestValue != yMag) {
+            return Vector3.down * (smallestValue - yMag);
+        }
+
+        return Vector3.down * grav*Time.deltaTime;
     }
-
-    private void OnCollisionEnter() { coll.attachedRigidbody.useGravity = false; }
-    private void OnCollisionExit() { coll.attachedRigidbody.useGravity = true;  }
-  
-
+    
+    Vector3 Velocity()
 }
