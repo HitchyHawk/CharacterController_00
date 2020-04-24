@@ -7,7 +7,8 @@ public class PlayerCollision : MonoBehaviour
     Color rayColor = new Color(1, 0, 0);
     PlayerController controls;
     Collider coll;
-
+    public LayerMask collisionMask = 0;
+    public float tollerace = 0.01f;
     public float speed = 1;
     public float jumpSpeed = 2;
     public float drag = 0.2f;
@@ -19,110 +20,81 @@ public class PlayerCollision : MonoBehaviour
     public bool isGrounded = false;
 
     public Vector3 velocity = new Vector3(0,0,0);
+    private Vector3 respawn;
     private Vector3 position;
+
+    private float temp = 0;
 
     void Start()
     {
+        respawn = transform.position;
         controls = GetComponent<PlayerController>();
         coll = GetComponent<Collider>();
     }
 
     void FixedUpdate()
     {
-        position = transform.position;
-        if (Vector3.Magnitude(controls.HoVeInput) != 0)
-        {
-            velocity += (controls.HoVeInput * speed - new Vector3(velocity.x, 0, velocity.z) * drag) * Time.deltaTime;
-        }
-        else { 
-            velocity += ( -new Vector3(velocity.x, 0, velocity.z) * drag) * Time.deltaTime;
-        }
-
- 
-        velocity += Gravity(velocity.y);
-        velocity = CollisionVelocityAdjustment(velocity);
-
-        if (controls.isJump && isGrounded){
+        //respawn position
+        if (controls.reset) {
+            transform.position = respawn;
+            velocity = Vector3.zero;
             isGrounded = false;
-            velocity += Vector3.up * jumpSpeed;
         }
 
-        Debug.DrawRay(position, velocity * 10, new Color(1, 0, 0));
+        //sets our origin for calulating movement
+        position = transform.position;
+        velocity += (Vector3.down*grav + Vector3.Normalize(controls.HoVeInput) * speed - new Vector3(velocity.x, 0, velocity.z) * drag) * Time.deltaTime;
 
-        //Debug.DrawRay(position, velocity*10, new Color(0, 1, 0));
+        //calculate horizontal collision and slopes slopes due to velocity
+        velocity = CollisionVelocityAdjustment(velocity);
+        //This is where we will end up
+        position += velocity;
 
-
-
-        transform.position += velocity;
-           
-    }
-
-    Vector3 Gravity(float y) {
-        RaycastHit hit;
-        Ray ray;
-        Vector3 origin;
-        float yPrime = y - grav * Time.deltaTime;
-        float length = Mathf.Abs(yPrime);
-        float smallestValue = length;
-            
-        origin = position + rayHeight * Vector3.up*yPrime/length;
-
-        for (int i = 1; i < collisionRes+1; i++) {
-            for (int j = 0; j <= i*i; j++) {
-                float p1 = Mathf.Cos(2 * Mathf.PI * j / (i*i)) * rayOffset * (i-1) / collisionRes;
-                float p2 = Mathf.Sin(2 * Mathf.PI * j / (i*i)) * rayOffset * (i-1) / collisionRes;
-
-                Debug.DrawRay(origin + new Vector3(p1, 0, p2), Vector3.up*yPrime/length, rayColor);
-                Physics.Raycast(origin + new Vector3(p1, 0, p2), Vector3.up*yPrime/length, out hit);
-
-                if (hit.distance < smallestValue) smallestValue = hit.distance; 
+        //are we grounded?
+        //else apply appropriate gravity
+        if (isGrounded){
+            if (controls.isJump){
+                isGrounded = false;
+                position += Vector3.up * jumpSpeed*Time.deltaTime;
+                velocity += Vector3.up * jumpSpeed *Time.deltaTime;
             }
-        }
-
-        if (smallestValue < 0.0075f)
-        {
-            Debug.Log("less than?");
-            //if within small tolerence to, stop moving on the y axis. take y vel - y vel
-            isGrounded = true;
-            return -Vector3.up * y;
-            
-        }
-        else if (smallestValue != length) {
-            Debug.Log("new small?");
-            //if you do collide with something within the next move. Slow yourself down so you dont collide
-            //the distance you were going to go - hit distance = the extra bit that goes to far.
-            isGrounded = true;
-            return Vector3.up * (length - smallestValue)*Time.deltaTime;
 
         }
-        Debug.Log("apply grav");
-        isGrounded = false;
-        return Vector3.down * grav * Time.deltaTime;
+       
+        Debug.DrawRay(transform.position, velocity * 10, new Color(1, 0, 0));
+        transform.position = position;
+        Debug.Log("END OF CYCLE---------------------------");
     }
-
-    Vector3 CollisionVelocityAdjustment(Vector3 v) {
+    Vector3 CollisionVelocityAdjustment(Vector3 v)
+    {
         RaycastHit hit;
-        Vector3 norm;
         Vector3 p1 = position + Vector3.up * rayHeight / 2;
         Vector3 p2 = position - Vector3.up * rayHeight / 2;
-        if (Mathf.Abs(v.y) < 0.01f) {
-            if (Physics.CapsuleCast(p1, p2, rayOffset, Vector3.down, out hit, grav * Time.deltaTime * 2)) {
-                norm = hit.normal;
-                v -= Vector3.Dot(norm, v) * norm;
-                isGrounded = true;
-            }
-            
+
+        Debug.DrawRay(p2, Vector3.up, new Color(0, 1, 1));
+        //downwards cast to folow the slope down or up
+        Debug.Log("Collide with floor, for proper terrain Movement?");
+        if (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y))) {
+            p1 += Vector3.Normalize(v) * hit.distance;
+            p2 += Vector3.Normalize(v) * hit.distance;
+            //move collision sphere there to calculate how to deal with floor or ramp
+            v -= Vector3.Dot(hit.normal, v) * hit.normal;
+            Debug.Log("Normal floor hit:" + hit.normal);
+            Debug.DrawRay(p2, Vector3.up, new Color(0, 1, 0));
+
+            isGrounded = true;
+        } else {
+            Debug.Log("No ground below to map movement to properly");
+            isGrounded = false;
         }
 
+        Debug.Log("Checking this horizontal slope wall check");
+        //horizontal cast to follow the slope if about to crash into it
         if (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v))) {
-            
-            //Debug.Log("hit distance: " + hit.distance);
-            norm = hit.normal;
-            
-            v -= Vector3.Dot(norm, v) * norm;
+            v -= Vector3.Dot(hit.normal, v) * hit.normal;
+            Debug.Log("Yes slope of wall/ramp, normal:" + hit.normal);
         }
 
         return v;
-
     }
 }
