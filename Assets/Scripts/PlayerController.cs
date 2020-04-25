@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour
     public GameObject cameraPivot;
     public bool mouseLocked = true;
     public float sensitivity = 1;
+    public float cameraSmooth = 2;
     public float baseRadius = 6;
     public float baseHeight = 1;
     public float theta = 0;
@@ -65,10 +66,12 @@ public class PlayerController : MonoBehaviour
             if (Mathf.Abs(theta) > 2 * Mathf.PI) theta -= 2 * Mathf.PI * theta / Mathf.Abs(theta);
             cameraPivot.transform.localEulerAngles = new Vector3(0, Mathf.Rad2Deg*theta, 0);
 
+            Debug.Log("y: " + cameraObject.transform.localPosition.y + "\tz: " + cameraObject.transform.localPosition.z);
+
             cameraObject.transform.localPosition = new Vector3
                 (0,
-                ( baseHeight - cameraObject.transform.localPosition.y) / 10,
-                (-baseRadius - cameraObject.transform.localPosition.z) / 10) * Time.deltaTime;
+                ( baseHeight + cameraObject.transform.localPosition.y * (cameraSmooth - 1)),
+                (-baseRadius + cameraObject.transform.localPosition.z * (cameraSmooth - 1))) /cameraSmooth;
             
         }
         else {
@@ -79,9 +82,6 @@ public class PlayerController : MonoBehaviour
         
         HoVeInput[0] =  tempHV[0]*Mathf.Cos(-theta) - tempHV[2]* Mathf.Sin(-theta);
         HoVeInput[2] =  tempHV[0]*Mathf.Sin(-theta) + tempHV[2]* Mathf.Cos(-theta);
-        Debug.Log("cos: "+ Mathf.Cos(theta) + "\tsin: " + Mathf.Sin(theta));
-        Debug.Log(Vector3.Magnitude(HoVeInput));
-
 
     }
 

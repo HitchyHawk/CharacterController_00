@@ -481,7 +481,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -64.6, y: 0, z: 53.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2012667502}
@@ -620,6 +620,7 @@ MonoBehaviour:
   cameraPivot: {fileID: 2012667501}
   mouseLocked: 1
   sensitivity: 10
+  cameraSmooth: 10
   baseRadius: 6
   baseHeight: 1
   theta: 0
