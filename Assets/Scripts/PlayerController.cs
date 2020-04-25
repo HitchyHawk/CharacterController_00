@@ -6,9 +6,17 @@ public class PlayerController : MonoBehaviour
 {
     public Vector3 HoVeInput = new Vector3(0,0,0);
     private Vector3 tempHV;
+    public LayerMask collisionMask = 0;
+
+    /// <summary>
+    /// WORLD VARS
+    /// </summary>
     public float grav = 0.75f;
     public float drag = 20;
 
+    /// <summary>
+    /// MOVE VARS
+    /// </summary>
     public float baseSpeed = 1;
     public float sprintSpeed = 1.5f;
     public float jumpSpeed = 2;
@@ -17,28 +25,30 @@ public class PlayerController : MonoBehaviour
     public bool reset = false;
     public bool isSprint = false;
 
-    public GameObject cameraObject;
-    public GameObject cameraPivot;
+    /// <summary>
+    /// CAMERA VARS
+    /// </summary>
     public bool mouseLocked = true;
     public float sensitivity = 1;
+    public float cameraXRot = 30;
     public float cameraSmooth = 2;
     public float baseRadius = 6;
     public float baseHeight = 1;
     public float theta = 0;
-    float radius = 0.1f;
-    Vector3 cameraPosition = Vector3.zero;
+    public float h = 0;
+    float temp;
+    public float heightLimit = 3;
+    public float cameraSize = 0.5f;
 
-    private Vector3 center;
 
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        
     }
 
 
     // Update is called once per frame
-    void FixedUpdate()
+    public void FixedUpdate()
     {
         
         if      (Input.GetKey(KeyCode.D))   HoVeInput[0] = 1;
@@ -64,25 +74,33 @@ public class PlayerController : MonoBehaviour
             //Debug.Log("H: " + Input.GetAxis("Mouse X") + "\tV: " + Input.GetAxis("Mouse Y"));
             theta += Input.GetAxis("Mouse X") * sensitivity*Time.deltaTime;
             if (Mathf.Abs(theta) > 2 * Mathf.PI) theta -= 2 * Mathf.PI * theta / Mathf.Abs(theta);
-            cameraPivot.transform.localEulerAngles = new Vector3(0, Mathf.Rad2Deg*theta, 0);
 
-            Debug.Log("y: " + cameraObject.transform.localPosition.y + "\tz: " + cameraObject.transform.localPosition.z);
+            temp = Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime*0.5F;
+            if (h * temp > 0)
+            {
+                if (h > 0)
+                {
+                    h += (Mathf.Cos((h) * Mathf.PI / baseHeight) + 1) * temp;
+                    
+                }
+                else {
+                    h += (Mathf.Cos((h) * Mathf.PI / heightLimit) + 1) * temp;
+                }
+                
+            }
+            else h += temp;
+            if (h < -heightLimit) h = -heightLimit;
+            if (h > baseHeight) h = baseHeight;
 
-            cameraObject.transform.localPosition = new Vector3
-                (0,
-                ( baseHeight + cameraObject.transform.localPosition.y * (cameraSmooth - 1)),
-                (-baseRadius + cameraObject.transform.localPosition.z * (cameraSmooth - 1))) /cameraSmooth;
-            
+
         }
         else {
             Cursor.lockState = CursorLockMode.None;
         }
         tempHV = Vector3.Normalize(HoVeInput);
 
-        
         HoVeInput[0] =  tempHV[0]*Mathf.Cos(-theta) - tempHV[2]* Mathf.Sin(-theta);
         HoVeInput[2] =  tempHV[0]*Mathf.Sin(-theta) + tempHV[2]* Mathf.Cos(-theta);
-
     }
 
 }

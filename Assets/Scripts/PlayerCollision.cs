@@ -4,10 +4,8 @@ using UnityEngine;
 
 public class PlayerCollision : MonoBehaviour
 {
-    Color rayColor = new Color(1, 0, 0);
     PlayerController controls;
-    Collider coll;
-    public LayerMask collisionMask = 0;
+    
     public int checksPerFrame = 5;
     private float baseSpeed,sprintSpeed,jumpSpeed,speed,grav,drag;
    
@@ -26,10 +24,7 @@ public class PlayerCollision : MonoBehaviour
     {
         respawn = transform.position;
         controls = GetComponent<PlayerController>();
-        coll = GetComponent<Collider>();
-        baseSpeed = speed = controls.baseSpeed;
-        sprintSpeed = controls.sprintSpeed;
-        jumpSpeed = controls.jumpSpeed;
+        speed = controls.baseSpeed;
         drag = controls.drag;
         grav = controls.grav;
     }
@@ -43,14 +38,14 @@ public class PlayerCollision : MonoBehaviour
             isGrounded = false;
         }
         if (controls.isSprint){
-            speed = baseSpeed * sprintSpeed;
+            speed = controls.baseSpeed * controls.sprintSpeed;
         }
-        else speed = baseSpeed;
+        else speed = controls.baseSpeed;
         jumped = false;
 
         //sets our origin for calulating movement
         position = transform.position;
-        velocity += (controls.HoVeInput * speed - new Vector3(velocity.x, 0, velocity.z) * drag) * Time.deltaTime;
+        velocity += (controls.HoVeInput * speed - new Vector3(velocity.x, 0, velocity.z) * controls.drag) * Time.deltaTime;
         
         if (isGrounded)
         {
@@ -58,7 +53,7 @@ public class PlayerCollision : MonoBehaviour
             {
                 isGrounded = false;
                 jumped = true;
-                velocity += Vector3.up * jumpSpeed * Time.deltaTime;
+                velocity += Vector3.up * controls.jumpSpeed * Time.deltaTime;
             }
         }
         //calculate horizontal collision and slopes slopes due to velocity
@@ -85,8 +80,9 @@ public class PlayerCollision : MonoBehaviour
                 i++;
             } while (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime) && i < checksPerFrame);
             isGrounded = true;
-        } else {
-            v += Vector3.down * grav * Time.deltaTime;
+        } 
+        else {
+            v += Vector3.down * controls.grav * Time.deltaTime;
             isGrounded = false;
         }
 
