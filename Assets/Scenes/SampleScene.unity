@@ -1339,6 +1339,8 @@ MonoBehaviour:
   cameraDirection: {x: 0, y: 1, z: 0}
   theta: 0
   phi: 0
+  thetaRate: 0
+  phiRate: 0
   phiCutOff: 1.2707963
   radius: 0
 --- !u!4 &1772266943
@@ -1379,8 +1381,9 @@ MonoBehaviour:
   sprintSpeed: 1.5
   jumpSpeed: 15
   camera: {fileID: 1772266942}
-  cameraOffset: {x: 0, y: 0, z: 0}
-  cameraBgR: 0.165
+  cameraOffset: {x: 0, y: 0.5, z: -3}
+  cameraSensitiviy: 10
+  cameraBgR: 0.255
   cameraSmllR: 2
   cameraSmooth: 11.4
   camHSpeed: 0

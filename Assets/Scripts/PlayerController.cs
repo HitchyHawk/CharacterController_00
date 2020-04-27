@@ -36,9 +36,11 @@ public class PlayerController : MonoBehaviour
     [Header("Camera Controls")]
     public CameraController camera;
     public Vector3 cameraOffset = new Vector3(0,0,0);
+    [Range(0,10)]
+    public float cameraSensitiviy = 10;
     [Range(0.001f,1)]
     public float cameraBgR = 10;       //this is the bigger radius that we move the "curso" on
-    [Range(0.1f, 2)]
+    [Range(0.1f, 10)]
     public float cameraSmllR = 1;
     [Range(1,30)]
     public float cameraSmooth = 2;      //bigger is smoother
@@ -63,7 +65,7 @@ public class PlayerController : MonoBehaviour
 
 
     // Update is called once per frame
-    public void FixedUpdate()
+    public void Update()
     {
         
         if      (Input.GetKey(KeyCode.D))       HoVeInput[0] = 1;
@@ -90,8 +92,8 @@ public class PlayerController : MonoBehaviour
 
         if (mouseLocked) {
             //Debug.Log("H: " + Input.GetAxis("Mouse X") + "\tV: " + Input.GetAxis("Mouse Y"));
-            camHSpeed = Input.GetAxis("Mouse X") * Time.deltaTime;
-            camVSpeed = -Input.GetAxis("Mouse Y") * Time.deltaTime;
+            camHSpeed =  Input.GetAxis("Mouse X")*Time.deltaTime;
+            camVSpeed = -Input.GetAxis("Mouse Y")*Time.deltaTime;
         }
         else {
             Cursor.lockState = CursorLockMode.None;
