@@ -7,16 +7,16 @@ public class PlayerCollision : MonoBehaviour
     PlayerController controls;
     
     public int checksPerFrame = 5;
-    private float baseSpeed,sprintSpeed,jumpSpeed,speed,grav,drag;
+    private float speed,grav,drag;
    
     
     float rayOffset = 0.5f;
     float rayHeight = 0.75f;
 
-    public bool isGrounded = false;
-    public bool jumped = false;
+    private bool isGrounded = false;
+    private bool jumped = false;
 
-    public Vector3 velocity = new Vector3(0,0,0);
+    private Vector3 velocity = new Vector3(0,0,0);
     private Vector3 respawn;
     private Vector3 position;
 
@@ -63,7 +63,8 @@ public class PlayerCollision : MonoBehaviour
         position += velocity;
 
         //Debug.DrawRay(transform.position, velocity * 10, new Color(1, 0, 0));
-        transform.position = position;
+        transform.position = position ;
+        //transform.position = position;
     }
     Vector3 CollisionVelocityAdjustment(Vector3 v)
     {
@@ -72,13 +73,13 @@ public class PlayerCollision : MonoBehaviour
         Vector3 p2 = position - Vector3.up * rayHeight / 2;
 
         //downwards cast to folow the slope down or up
-        if (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime) && !jumped) {
+        if (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime,controls.collisionMask) && !jumped) {
             int i = 0;
             do {
                 //move collision sphere there to calculate how to deal with floor or ramp
                 v -= Vector3.Dot(hit.normal, v) * hit.normal;
                 i++;
-            } while (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime) && i < checksPerFrame);
+            } while (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime, controls.collisionMask) && i < checksPerFrame);
             isGrounded = true;
         } 
         else {
@@ -87,7 +88,7 @@ public class PlayerCollision : MonoBehaviour
         }
 
         //walking on slopes or walls
-        if (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v))){
+        if (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v), controls.collisionMask)){
             int i = 0;
             do { 
                 v -= Vector3.Dot(hit.normal, v) * hit.normal;

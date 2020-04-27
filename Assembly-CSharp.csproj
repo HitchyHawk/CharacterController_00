@@ -63,7 +63,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\CameraCue.cs" />
+    <Compile Include="Assets\Scripts\CameraPlayerCue.cs" />
     <Compile Include="Assets\Scripts\PlayerCollision.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Reference Include="Unity.Timeline.Editor">
