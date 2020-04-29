@@ -47,7 +47,7 @@ public class CameraPlayerCue : MonoBehaviour
     Vector3 cameraCollision(Vector3 direction) {
         RaycastHit hit;
 
-        if (Physics.SphereCast(controls.transform.position, 0.5f, direction, out hit, Vector3.Magnitude(direction)))
+        if (Physics.SphereCast(controls.transform.position, 0.5f, direction, out hit, Vector3.Magnitude(direction),controls.collisionMask))
             return Vector3.Normalize(direction) * hit.distance;
         else return direction;
     }

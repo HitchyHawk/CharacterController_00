@@ -106,7 +106,7 @@ public class PlayerCollision : MonoBehaviour
             {
                 v -= Vector3.Dot(hit.normal, v) * hit.normal;
                 i++;
-            } while (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v)) && i < checksPerFrame);
+            } while (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v),controls.collisionMask) && i < checksPerFrame);
 
             if (i == checksPerFrame) v *= 0;
 
