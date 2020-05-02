@@ -179,6 +179,11 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+
+        //if cue animation is over and is global, remove cue, else defualt (wait for player to leave cue)
+        if (!cue.activate && cue.makeGlobal) {
+            removeCue();
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -199,16 +204,17 @@ public class PlayerController : MonoBehaviour
         allowedToMove = cue.allowedToMove;
     }
     void OnTriggerExit(Collider other)
-    { 
+    {
+        if (!cue.makeGlobal)removeCue();
+    }
+
+    void removeCue() {
         inCue = false;
-        cue = null;
-
-        //activates the transition movement locking
-        if (cue.lockMovement)   inTransition = true;
-        else                    inTransition = false;
-
-        //reset the timeings
         cue.currentTime = 0;
+        if (cue.lockMovement) inTransition = true;
+        else inTransition = false;
+        allowedToMove = true;
+        cue = null;
     }
 
 
