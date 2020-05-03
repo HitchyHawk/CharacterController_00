@@ -1,11 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SpecialMaths;
 
 public class CameraCue : MonoBehaviour
 {
-    [HideInInspector] public float theta;                                                           //The final Theta
-    [HideInInspector] public float phi;                                                             //The final Phi
+
+    [HideInInspector] public AngleSpace theta;
+    [HideInInspector] public AngleSpace phi;
+
+    //[HideInInspector] public float theta;                                                           //The final Theta
+    //[HideInInspector] public float phi;                                                             //The final Phi
     [HideInInspector] public Vector3 position;                                                      //The final position
     public Vector3[] points = new Vector3[3] {
         new Vector3(0f,1f,0f),
@@ -14,13 +19,13 @@ public class CameraCue : MonoBehaviour
     };                                                    //Our camera rail guides
     [Range(0             ,Mathf.PI*2   )]public float[] targetTheta  = new float[3] {0f,0f,0f};     //What each theta is for each guide
     [Range(-Mathf.PI*0.5f,Mathf.PI*0.5f)]public float[] targetPhi    = new float[3] {0f,0f,0f};     //What each Phi is for each guide
-    
+
     /// <summary>
     /// Conditional Statements for custom shtuff
     /// </summary>
     [Header("Smoothness")]
     [Range(50, 300)] public float CueSmoothness = 100;
-    [Range(0.1f, 20)] public float timeTran = 10;
+    [Range(0.1f, 20)] public float timeEnd = 5;
     [Range(0.1f, 20)] public float timeMiddle = 5;
 
     public bool allowedToMove = true;       //Is the player allowed to move while cue animation
@@ -45,9 +50,14 @@ public class CameraCue : MonoBehaviour
 
         targetTheta = new float[3] { 0f, 0f, 0f };
         targetPhi = new float[3] { 0f, 0f, 0f };
+
+        theta = new AngleSpace(0, Mathf.PI * 2, -0, true);
+        phi = new AngleSpace(0, Mathf.PI * 0.5f, -Mathf.PI * 0.5f, false);
     }
     private void Start() {
         position = points[0];
+        theta = new AngleSpace(0, Mathf.PI * 2, -0, true);
+        phi = new AngleSpace(0, Mathf.PI * 0.5f, -Mathf.PI * 0.5f, false);
     }
 
     public Vector3 GetPoint(float t)
@@ -63,37 +73,24 @@ public class CameraCue : MonoBehaviour
     private void Update()
     {
         if (activate) {
-            if (currentTime < timeTran)
+            if (currentTime < (timeMiddle + timeEnd))
             {
                 currentTime += Time.deltaTime;
-                position = GetPoint(currentTime / timeTran);
-
-                //All to keep Theta within (0, 2PI)
-                for (int i = 0; i <= 2; i++){
-                    if (targetTheta[i] < 0) targetTheta[i] += Mathf.PI * 2;
-                    if (targetTheta[i] > Mathf.PI * 2) targetTheta[i] -= Mathf.PI * 2;
-                }
+                position = GetPoint(currentTime / (timeMiddle+timeEnd));
 
                 if (currentTime < timeMiddle){
-                    //Keeps rotations from doing 360s even if rotating towards -theta is faster. Keeps things pure while remaining within (0, 2pi)
-                    if      (Mathf.Abs(targetTheta[1] - targetTheta[0]) > Mathf.Abs(targetTheta[1] - (targetTheta[0] + Mathf.PI * 2))) targetTheta[1] -= Mathf.PI * 2;
-                    else if (Mathf.Abs(targetTheta[1] - targetTheta[0]) > Mathf.Abs(targetTheta[1] - (targetTheta[0] - Mathf.PI * 2))) targetTheta[1] += Mathf.PI * 2;
-
-                    theta   = (targetTheta[1] - targetTheta[0]) * currentTime / timeMiddle + targetTheta[0];
-                    phi     = (targetPhi[1] - targetPhi[0]) * currentTime / timeMiddle + targetPhi[0];
+                    theta.LinearLerp(targetTheta[0], targetTheta[1], currentTime, timeMiddle);
+                    phi.LinearLerp  (targetPhi[0]  , targetPhi[1]  , currentTime, timeMiddle);
                 }
-                else{
-                    if      (Mathf.Abs(targetTheta[2] - targetTheta[1]) > Mathf.Abs(targetTheta[2] - (targetTheta[1] + Mathf.PI * 2))) targetTheta[2] -= Mathf.PI * 2;
-                    else if (Mathf.Abs(targetTheta[2] - targetTheta[1]) > Mathf.Abs(targetTheta[2] - (targetTheta[1] - Mathf.PI * 2))) targetTheta[2] += Mathf.PI * 2;
-
-                    theta   = (targetTheta[2] - targetTheta[1]) * (currentTime - timeMiddle) / (timeTran - timeMiddle) + targetTheta[1];
-                    phi     = (targetPhi[2] - targetPhi[1]) * (currentTime - timeMiddle) / (timeTran - timeMiddle) + targetPhi[1];
+                else{   
+                    theta.LinearLerp(targetTheta[1], targetTheta[2], (currentTime - timeMiddle), timeEnd);
+                    phi.LinearLerp  (targetPhi[1]  , targetPhi[2]  , (currentTime - timeMiddle), timeEnd);
                 }
 
             }
             else{
                 currentTime += Time.deltaTime;
-                if (currentTime > timeTran + timeStay){
+                if (currentTime > (timeMiddle+timeEnd) + timeStay){
                     activate = false;
                     allowedToMove = true;
                     if (removeCueAfter) Destroy(gameObject);
@@ -103,7 +100,8 @@ public class CameraCue : MonoBehaviour
         
     }
 
-
+    public float GetTheta() { return theta.GetFloat(); }
+    public float GetPhi() { return phi.GetFloat(); }
 
     private void OnDrawGizmos()
     {

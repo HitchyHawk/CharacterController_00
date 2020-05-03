@@ -1,53 +1,55 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SpecialMaths;
 
 public class CameraPlayerCue : MonoBehaviour
 {
     PlayerController controls;
-    public float theta = 0; //y rot
-    public float phi = 0; //x rot
 
-    [Range(0, Mathf.PI * 0.5f)]
-    public float phiCutOff = Mathf.PI * 0.5f - 0.1f;
+    public AngleSpace theta;
+    public AngleSpace phi;
+
+    [HideInInspector]public Vector3 rotation = Vector3.zero; 
 
     public Vector3 position;
+    [HideInInspector]public float radius = 0;
 
-    public float radius = 0;
-
-    // Start is called before the first frame update
     void Start() {
+        theta = new AngleSpace(0, Mathf.PI * 2, 0, true);
+        phi = new AngleSpace(0, Mathf.PI * 0.5f, -Mathf.PI * 0.5f, false);
         controls = GetComponent<PlayerController>();
     }
 
-    // Update is called once per frame
-    /// <summary>
-    /// I NEED TO CAP THE SENSITIVY IF THE CAMERA IS HELLA FAR AWAYS SO IT DOESNT SWING LIKE CRAZY!!!!!!!!!!
-    /// </summary>
     void Update()
     {
         radius = controls.cameraRadius;
-        theta += Mathf.Atan(controls.camSpeed.x/radius) * controls.cameraSensitivity;
-
+        //Debug.Log(theta.GetFloat());
+        theta.AddAngle  (Mathf.Atan(controls.camSpeed.x/radius)   * controls.cameraSensitivity);
+        phi.AddAngle    (Mathf.Atan(controls.camSpeed.y / radius) * controls.cameraSensitivity);
 
         //so the camera doesnt rotate upside down and slows down when it approaches the top;
         // used arctan(controls.cam""Speed/ controls.cameraBgR) but I think I was having floating point errors with it.
-        if (phi * controls.camSpeed.y > 0)  phi += (Mathf.Pow(phi / (phiCutOff), 10) + 1) * Mathf.Atan(controls.camSpeed.y / radius) * controls.cameraSensitivity;
-        else                                phi +=                                          Mathf.Atan(controls.camSpeed.y / radius) * controls.cameraSensitivity;
 
-        if (phi > phiCutOff)        phi = phiCutOff;
-        else if (phi < -phiCutOff)  phi = -phiCutOff;
-
-        position = cameraCollision(new Vector3( Mathf.Sin(phi-Mathf.PI * 0.5f) * Mathf.Sin(theta), 
-                                                Mathf.Cos(phi-Mathf.PI * 0.5f), 
-                                                Mathf.Sin(phi-Mathf.PI * 0.5f) * Mathf.Cos(theta)) * radius + controls.cameraOffset);
-
+        position = cameraCollision(new Vector3( Mathf.Sin(phi.GetFloat() - Mathf.PI * 0.5f) * Mathf.Sin(theta.GetFloat()), 
+                                                Mathf.Cos(phi.GetFloat() - Mathf.PI * 0.5f), 
+                                                Mathf.Sin(phi.GetFloat() - Mathf.PI * 0.5f) * Mathf.Cos(theta.GetFloat())) * radius + controls.cameraOffset);
+        rotation.x = phi.GetFloat();
+        rotation.y = theta.GetFloat();
     }
+
     Vector3 cameraCollision(Vector3 direction) {
         RaycastHit hit;
 
         if (Physics.SphereCast(controls.transform.position, 0.5f, direction, out hit, Vector3.Magnitude(direction),controls.collisionMask))
             return Vector3.Normalize(direction) * hit.distance;
         else return direction;
+    }
+
+    public void SetTheta(float a2) {
+        theta.SetTheta(a2);
+    }
+    public void SetPhi(float a1) {
+        phi.SetTheta(a1);
     }
 }

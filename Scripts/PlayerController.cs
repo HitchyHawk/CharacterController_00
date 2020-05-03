@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SpecialMaths;
 
 public class PlayerController : MonoBehaviour
 {
@@ -47,10 +48,11 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public Vector3 targetPos      = Vector3.zero; //The target pos that the camera pos is trying to get to
     [HideInInspector] public Vector3 targetAngleTP  = Vector3.zero; //The target angle that theta is trying to get to
 
-    [HideInInspector] public float theta = 0;                       //current theta rotation of the camera. goes from 0 to 2*pi
-    [HideInInspector] public float phi = 0;                         //current phi rotation of the camera. goes from -pi to pi. depends on the cameraCue phi cutoff
-    
-                      private Vector3 preHoVeInput;                 //used to the previous movement option, not dependent on camera rotation, for transition
+    [HideInInspector] AngleSpace theta;
+    [HideInInspector] AngleSpace phi;                      
+
+
+    private Vector3 preHoVeInput;                 //used to the previous movement option, not dependent on camera rotation, for transition
                       private float   preTheta;                     //the last theta before changing camera cue,
                       public bool     inTransition    = false;      //did you enter or exit a camera cue?
                       private bool    inCue           = false;      //are you in a cameraCue zone
@@ -62,13 +64,14 @@ public class PlayerController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         cameraPlayerCue = GetComponent<CameraPlayerCue>();
+        theta = new AngleSpace(0, Mathf.PI * 2, 0,true);
+        phi = new AngleSpace(0, Mathf.PI * 0.5f, -Mathf.PI * 0.5f,false);
     }
 
 
     // Update is called once per frame
     public void Update()
     {
-        
         //What keys got pushed?
         {
             if (cue == null) {
@@ -118,71 +121,53 @@ public class PlayerController : MonoBehaviour
                 camSpeed = Vector2.zero;
             }
 
-            //to minimize floating point errors
-            if (theta > 2 * Mathf.PI && cameraPlayerCue.theta > 2 * Mathf.PI) {
-                theta                   -= 2 * Mathf.PI;
-                cameraPlayerCue.theta   -= 2 * Mathf.PI;
-            }
-            else if (theta < 0 && cameraPlayerCue.theta < 0) {
-                theta                   += 2 * Mathf.PI;
-                cameraPlayerCue.theta   += 2 * Mathf.PI;
-            }
-
             //dealing with cues
             if (inCue)
             {
+                if (!cue.activate && cue.makeGlobal) removeCue();
+
                 targetPos = cue.position;
-                targetAngleTP.y = cameraPlayerCue.theta = cue.theta;
-                targetAngleTP.x = cameraPlayerCue.phi   = -cue.phi;
+                //need to give everything the same cue angle
+                targetAngleTP.y = cue.GetTheta();
+                targetAngleTP.x = -cue.GetPhi();
+
+                cameraPlayerCue.SetTheta(targetAngleTP.y);
+                cameraPlayerCue.SetPhi  (targetAngleTP.x);
+
                 cameraSmooth = cue.CueSmoothness;
-                if (Mathf.Abs(targetAngleTP.y - theta) > Mathf.Abs(targetAngleTP.y - (theta + Mathf.PI * 2)))
-                {
-                    //Debug.Log("TEST");
-                    targetAngleTP.y -= Mathf.PI * 2;
-                    cameraPlayerCue.theta -= Mathf.PI * 2; //update both to activate the minimize floating point error
-                }
-                else if (Mathf.Abs(targetAngleTP.y - theta) > Mathf.Abs(targetAngleTP.y - (theta - Mathf.PI * 2))) {
-                    //Debug.Log("TEST2");
-                    targetAngleTP.y += Mathf.PI * 2;
-                    cameraPlayerCue.theta += Mathf.PI * 2; //update both to activate the minimize floating point error
-                }
             }
             else {
                 targetPos       = cameraPlayerCue.position + transform.position;
-                targetAngleTP.y = cameraPlayerCue.theta;
-                targetAngleTP.x = cameraPlayerCue.phi;
+                targetAngleTP   = cameraPlayerCue.rotation;
                 cameraSmooth    = (cameraSmoothBase - cameraSmooth) *0.01f + cameraSmooth;
             }
 
             //the smoothing bit that finallizes it.
             camera.transform.position   = (targetPos - camera.transform.position)   / cameraSmooth + camera.transform.position;
-            theta                       = (targetAngleTP.y - theta)                 / cameraSmooth + theta;
-            phi                         = (targetAngleTP.x - phi)                   / cameraSmooth + phi;
-
-            camera.transform.eulerAngles = new Vector3(phi, theta, 0) * Mathf.Rad2Deg;
-
-            //applying it to movement and camera
-            if (allowedToMove) {
-                if (inTransition) {
-                    //for locked movement when switching cues.
-                    if (preHoVeInput == HoVeInput) {
-                        HoVeInput = Vector3.Normalize(new Vector3(HoVeInput[0] * Mathf.Cos(-preTheta) - HoVeInput[2] * Mathf.Sin(-preTheta),
-                                                                  0,
-                                                                  HoVeInput[0] * Mathf.Sin(-preTheta) + HoVeInput[2] * Mathf.Cos(-preTheta)));
-                    } else inTransition = false;
-                } else {
-                    preTheta = theta;
-                    preHoVeInput = HoVeInput;
-                    HoVeInput = Vector3.Normalize(new Vector3(HoVeInput[0] * Mathf.Cos(-theta) - HoVeInput[2] * Mathf.Sin(-theta),
-                                                              0,
-                                                              HoVeInput[0] * Mathf.Sin(-theta) + HoVeInput[2] * Mathf.Cos(-theta)));
-                }
-            }
+            theta.StepLerp(targetAngleTP.y, cameraSmooth);
+            phi.  StepLerp(targetAngleTP.x, cameraSmooth);
+            camera.transform.eulerAngles = new Vector3(phi.GetDeg(), theta.GetDeg(), 0);
         }
 
-        //if cue animation is over and is global, remove cue, else defualt (wait for player to leave cue)
-        if (!cue.activate && cue.makeGlobal) {
-            removeCue();
+        //Movement
+        if (allowedToMove)
+        {
+            if (inTransition) {
+                //for locked movement when switching cues.
+                if (preHoVeInput == HoVeInput) {
+                    HoVeInput = Vector3.Normalize(new Vector3(HoVeInput[0] * Mathf.Cos(-preTheta) - HoVeInput[2] * Mathf.Sin(-preTheta),
+                                                              0,
+                                                              HoVeInput[0] * Mathf.Sin(-preTheta) + HoVeInput[2] * Mathf.Cos(-preTheta)));
+                }
+                else inTransition = false;
+            }
+            else {
+                preTheta = theta.GetFloat();
+                preHoVeInput = HoVeInput;
+                HoVeInput = Vector3.Normalize(new Vector3(HoVeInput[0] * Mathf.Cos(-theta.GetFloat()) - HoVeInput[2] * Mathf.Sin(-theta.GetFloat()),
+                                                          0,
+                                                          HoVeInput[0] * Mathf.Sin(-theta.GetFloat()) + HoVeInput[2] * Mathf.Cos(-theta.GetFloat())));
+            }
         }
     }
 
@@ -198,16 +183,17 @@ public class PlayerController : MonoBehaviour
         //activates the camera movement
         cue.activate = true;
     }
-
     void OnTriggerStay(Collider other)
     {
         allowedToMove = cue.allowedToMove;
     }
     void OnTriggerExit(Collider other)
     {
-        if (!cue.makeGlobal)removeCue();
+        if (!cue.makeGlobal) {
+            removeCue();
+            inCue = false;
+        }
     }
-
     void removeCue() {
         inCue = false;
         cue.currentTime = 0;
@@ -216,6 +202,5 @@ public class PlayerController : MonoBehaviour
         allowedToMove = true;
         cue = null;
     }
-
 
 }
