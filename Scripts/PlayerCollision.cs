@@ -9,13 +9,16 @@ public class PlayerCollision : MonoBehaviour
     public int      checksPerFrame = 5;
     public float    smooth = 5;
     private float   speed, grav, drag;
-
+    public float    slopeMaxDeg = 60;
+    private float jumpTimer = 0;
+      
 
     float rayOffset = 0.5f;
-    float rayHeight = 0.75f;
+    float rayHeight = 1f;
 
-    private bool isGrounded = false;
+    public bool isGrounded = false;
     private bool jumped = false;
+    public bool isSliding = false;
 
     private Vector3 velocity = new Vector3(0, 0, 0);
     private Vector3 respawn;
@@ -32,6 +35,7 @@ public class PlayerCollision : MonoBehaviour
 
     void FixedUpdate()
     {
+        
         //respawn position
         if (controls.reset)
         {
@@ -47,17 +51,31 @@ public class PlayerCollision : MonoBehaviour
 
         //sets our origin for calulating movement
         position = transform.position;
-        velocity += (controls.HoVeInput * speed - new Vector3(velocity.x, 0, velocity.z) * controls.drag) * Time.deltaTime;
 
-        if (isGrounded)
-        {
-            if (controls.isJump)
-            {
-                isGrounded = false;
-                jumped = true;
-                velocity += Vector3.up * controls.jumpSpeed * Time.deltaTime;
+        if (isGrounded || isSliding) {
+            velocity += (controls.HoVeInput * speed) * Time.deltaTime;
+            velocity -= new Vector3(velocity.x, 0, velocity.z) / controls.drag ;
+        }
+        else {
+            velocity += (controls.HoVeInput * speed / controls.airSpeedDiv) * Time.deltaTime;
+            velocity -= new Vector3(velocity.x, 0, velocity.z) / (controls.airDrag);
+        }
+
+        if (jumpTimer >= controls.jumpCooldown) {
+            jumpTimer = controls.jumpCooldown;
+            if (isGrounded || isSliding){
+                if (controls.isJump){
+                    if (isSliding){
+                        velocity = new Vector3(velocity.x * 1.5f, controls.jumpSpeed * Time.deltaTime / 1.3f, velocity.z * 1.5f);
+                    } else velocity += Vector3.up * controls.jumpSpeed * Time.deltaTime;
+                    isGrounded = false;
+                    jumped = true;
+                    isSliding = false;
+                    jumpTimer = 0;
+                }
             }
         }
+        
 
         if (Vector3.Magnitude(velocity) > controls.maxSpeed) velocity = Vector3.Normalize(velocity) * controls.maxSpeed;
 
@@ -65,13 +83,10 @@ public class PlayerCollision : MonoBehaviour
         velocity = CollisionVelocityAdjustment(velocity);
 
         position += velocity;
+        jumpTimer += Time.deltaTime;
     }
 
-    //ghetto method to fix problem
-    //when switching my collision detection to update, it breaks. It needs the fixed time step.
-    //The fix is that we simply smooth between the two points it needs to go to. Simple fix since the intial and final have nothing inbetween them. So its always safe.
-    void Update()
-    {
+    void Update(){
         transform.position = (position - transform.position) / smooth + transform.position;
     }
     Vector3 CollisionVelocityAdjustment(Vector3 v)
@@ -80,20 +95,39 @@ public class PlayerCollision : MonoBehaviour
         Vector3 p1 = position + Vector3.up * rayHeight / 2;
         Vector3 p2 = position - Vector3.up * rayHeight / 2;
 
-        //downwards cast to folow the slope down or up
-        if (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime, controls.collisionMask) && !jumped)
-        {
-            int i = 0;
-            do {
-                //move collision sphere there to calculate how to deal with floor or ramp
-                v -= Vector3.Dot(hit.normal, v) * hit.normal;
-                i++;
-            } while (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y) + grav * Time.deltaTime, controls.collisionMask) && i < checksPerFrame);
-            isGrounded = true;
-        } else {
-            v += Vector3.down * controls.grav * Time.deltaTime;
-            isGrounded = false;
+        if (isSliding) {
+            if (Physics.SphereCast(p2, rayOffset, -v, out hit, Vector3.Magnitude(v) * 2, controls.collisionMask))
+            {
+                v = Vector3.ProjectOnPlane(v, hit.normal);
+            }
+            else if (Physics.SphereCast(p2, rayOffset, v, out hit, Vector3.Magnitude(v) * 2, controls.collisionMask)) {
+                v -= Vector3.ProjectOnPlane(Vector3.up, hit.normal) * grav * Time.deltaTime * 2.5f;
+            }
+            
         }
+
+        if (Physics.SphereCast(p2, rayOffset, Vector3.up * (v.y - grav) / Mathf.Abs(v.y - grav), out hit, Mathf.Abs(v.y) + grav * Time.deltaTime, controls.collisionMask) && !jumped) {
+            if (Vector3.Angle(hit.normal, Vector3.up) > slopeMaxDeg) {
+                isSliding = true;
+                if (Vector3.Dot(v,hit.normal) < 0) v -= Vector3.Dot(hit.normal, v) * hit.normal;
+            } 
+            else {
+                isSliding = false;
+                int i = 0;
+                do {
+                    v -= Vector3.Dot(hit.normal, v) * hit.normal;
+                    i++;
+                } while (Physics.SphereCast(p2, rayOffset, Vector3.down, out hit, Mathf.Abs(v.y), controls.collisionMask) && i < checksPerFrame);
+                isGrounded = true;
+            }
+        }
+        else {
+            isGrounded = false;
+            isSliding = false;
+        }
+        
+
+        if (!isGrounded || isSliding) v += Vector3.down * controls.grav * Time.deltaTime;
 
         //walking on slopes or walls
         if (Physics.CapsuleCast(p1, p2, rayOffset, v, out hit, Vector3.Magnitude(v), controls.collisionMask)) {
@@ -109,4 +143,6 @@ public class PlayerCollision : MonoBehaviour
         }
         return v;
     }
+
+   
 }

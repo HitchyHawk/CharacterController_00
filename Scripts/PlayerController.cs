@@ -12,8 +12,8 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     [Header("World controls")]
     [Range(0,  2)]  public float grav = 0.75f;  //gravity
-    [Range(0,100)]  public float drag = 20;     //only effects drag on the horizontal, not verticle
-
+    [Range(1, 10)]  public float drag = 1;     //only effects drag on the horizontal, not verticle
+    [Range(0,100)]  public float airDrag = 1;
     [Space(0)]
 
     /// <summary>
@@ -23,7 +23,9 @@ public class PlayerController : MonoBehaviour
     [Range(0, 4)] public float baseSpeed    = 1;        //what speed will return to after sprinting
     [Range(1, 5)] public float sprintSpeed  = 1.5f;     //what the basespeed is multiplied by
     [Range(0,50)] public float jumpSpeed    = 2;        //jump speed
+    [Range(1,10)] public float airSpeedDiv  = 4;
     [Range(0, 3)] public float maxSpeed     = 5;        //The maximum speed the player can have
+    [Range(0, 1)] public float jumpCooldown = 1;
     [Space(0)]
     [HideInInspector] public bool isJump = false;       //did the jump button get pushed
     [HideInInspector] public bool reset = false;        //did the respawn button get pushed
