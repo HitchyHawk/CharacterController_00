@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 70e523a03f19f88498e1b5fff2a9c922
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - vars: {fileID: 11400000, guid: 89282cb7ab07ece419eefe24333a9be1, type: 2}
+  - controls: {instanceID: 0}
+  - camTracker: {instanceID: 0}
+  - cameraObject: {instanceID: 0}
+  - cameraLookAt: {instanceID: 0}
+  - cameraPivot: {instanceID: 0}
+  - charMovement: {instanceID: 0}
+  - charAnimation: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
