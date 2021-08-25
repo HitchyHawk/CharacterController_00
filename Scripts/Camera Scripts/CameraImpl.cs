@@ -2,13 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CameraImpl : CameraActor
+public class CameraImpl : MonoBehaviour, CameraActor
 {
     protected Camera cam;
     protected Transform _lookAt, _pivot, _secondary;
-
-    protected Vector3 _previousInfluence;
-    protected float MAX_Radius, ideal_radius, collisionRadius, sensitivity, hFOV;
+    protected float sensitivity;
+    static protected float collisionRadius, hFOV;
 
     protected LayerMask cameraMask;
 
@@ -21,19 +20,17 @@ public class CameraImpl : CameraActor
     public virtual void refresh(Vector2 newInfluence) {
         throw new System.NotImplementedException();
     }
-    public void setCamera(Camera newCamera) => cam = newCamera;
-    public void setCameraSettings(CameraSettings newSettings){
+    public virtual void setCamera(Camera newCamera) => cam = newCamera;
+    public virtual void setCameraSettings(CameraSettings newSettings){
         //If naming convention changes, no heavy changes are needed.
-        MAX_Radius = newSettings.MAX_radius;
-        ideal_radius = newSettings.ideal_radius;
         collisionRadius = newSettings.collisionRadius;
         sensitivity = newSettings.sensitivity;
         hFOV = (float)newSettings.FOV;
         cameraMask = newSettings.cameraMask;
     }
-    public void setLookAt(Transform newLookAt) => _lookAt = newLookAt;
-    public void setPivot(Transform newPivot) => _pivot = newPivot;
-    public void setSecondary(Transform newSecondary) => _secondary = newSecondary;
+    public virtual void setLookAt(Transform newLookAt) => _lookAt = newLookAt;
+    public virtual void setPivot(Transform newPivot) => _pivot = newPivot;
+    public virtual void setSecondary(Transform newSecondary) => _secondary = newSecondary;
     
     ///<summary>
     ///Rotates the screen vectors to match the view and normal plane.
@@ -69,5 +66,9 @@ public class CameraImpl : CameraActor
     }
 
     protected float getCameraRadius() => Vector3.Distance(cam.transform.position, _pivot.position);
-    
+
+    public virtual void teleportCamera()
+    {
+        throw new System.NotImplementedException();
+    }
 }

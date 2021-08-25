@@ -6,9 +6,6 @@ using UnityEngine;
 public class CameraSettings : ScriptableObject
 {
     public float sensitivity = 1;
-    [Tooltip("if the camera is farther than this then NAH Just teleport that shit\nor move it faster, it depends on the CameraActor")] 
-    public float MAX_radius = 5;
-    public float ideal_radius = 2;
     public ToggleType FOV;     
     public ToggleType nearClippingPlane; 
     public LayerMask cameraMask;

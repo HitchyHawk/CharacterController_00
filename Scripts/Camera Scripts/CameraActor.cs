@@ -16,5 +16,8 @@ public interface CameraActor {
     void setCameraSettings(CameraSettings newSettings);
     Vector3 transformToView(Vector2 newDirection, Vector3 normal);
 
+    void teleportCamera();
     bool isTrack();
+
+
 } 
