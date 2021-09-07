@@ -8,7 +8,7 @@ public class Hitch_CharAnimation : MonoBehaviour
     [HideInInspector]public GameObject player;
     [HideInInspector]public Animator animator;
     [HideInInspector]public Hitch_CharController controller;
-    [HideInInspector]public Hitch_CharMovement charMovement;
+    //[HideInInspector]public Hitch_CharMovement charMovement;
     //[HideInInspector] Hitch_CharPhysics physics;
 
     Vector3 facingDirection, 
@@ -42,7 +42,7 @@ public class Hitch_CharAnimation : MonoBehaviour
     private void Start() {
         
         controller = GetComponent<Hitch_CharController>();
-        charMovement = GetComponent<Hitch_CharMovement>();
+        //charMovement = GetComponent<Hitch_CharMovement>();
 
         vars = controller.vars;
 
@@ -57,7 +57,7 @@ public class Hitch_CharAnimation : MonoBehaviour
         float a = 0, currentForwardAngle = player.transform.localEulerAngles.x;
         float rawStrength = 0;
         float orientation;
-        velocity = charMovement.getVelocity();
+        velocity = controller.getVelocity();
 
         //GETTING DIRECTIONS
         travelingDirection = Vector3.ProjectOnPlane(velocity, Vector3.up).magnitude != 0 ? Vector3.ProjectOnPlane(velocity, Vector3.up).normalized : previousTD;
@@ -76,8 +76,14 @@ public class Hitch_CharAnimation : MonoBehaviour
             currentForwardAngle = Mathf.LerpAngle(currentForwardAngle, desiredForwardAngle, t * 2);
         }
 
-        if (charMovement.isGrounded() && velocity.magnitude > 0){
-            rawStrength = (1 - Vector3.Dot(newFacingDirection, travelingDirection)) / 2f;
+        if (velocity.magnitude > 0){
+            /*
+            switch (controller.currentPhysicsMode){
+                case PhysicsModes.STANDING:
+                    rawStrength = (1 - Vector3.Dot(newFacingDirection, travelingDirection)) / 2f;
+                    break;
+            }
+            */
         }
 
         currentSidewaysStrength = Mathf.Lerp(currentSidewaysStrength, -orientation * rawStrength, t);

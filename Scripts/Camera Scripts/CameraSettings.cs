@@ -12,6 +12,7 @@ public class CameraSettings : ScriptableObject
     [HideInInspector] public float collisionRadius;
 
     void OnValidate() { 
+        /*
         FOV.defaultValue = Camera.VerticalToHorizontalFieldOfView(Camera.main.fieldOfView, Camera.main.aspect);
         nearClippingPlane.defaultValue = Camera.main.nearClipPlane;
         
@@ -26,6 +27,7 @@ public class CameraSettings : ScriptableObject
 
         collisionRadius = (float)nearClippingPlane / (Mathf.Cos((float)FOV * Mathf.Deg2Rad));
         updateValues(); 
+        */
     }
 
     

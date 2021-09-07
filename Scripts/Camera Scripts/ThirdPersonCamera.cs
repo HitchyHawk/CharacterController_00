@@ -31,7 +31,7 @@ public class ThirdPersonCamera : CameraImpl {
         prevIdeal += offset;
         //pivot already has offset.
 
-        avoidanceOffset = obstructionInfluence(prevIdeal, _pivot.position) ;
+        avoidanceOffset = obstructionInfluence(prevIdeal, _pivot.position)*0;
         if (newInfluence.magnitude > 0.25f)  avoidanceOffset = Vector2.zero;
 
         Vector2 totalInfluence = newInfluence + avoidanceOffset;
@@ -74,10 +74,10 @@ public class ThirdPersonCamera : CameraImpl {
             if (!Physics.Raycast(orbitPivot, p0 + rayOffset, out hit, rayDistance, cameraMask)){
                 hits++;
                 averageInfluenceDirection.x += 2 * options.x;
-                Debug.DrawLine(orbitPivot, orbitPivot + p0 + rayOffset, Color.green);
+                //Debug.DrawLine(orbitPivot, orbitPivot + p0 + rayOffset, Color.green);
             } else{
                 averageInfluenceDirection.x -= options.x;
-                Debug.DrawLine(orbitPivot, orbitPivot + p0 + rayOffset, Color.red);
+                //Debug.DrawLine(orbitPivot, orbitPivot + p0 + rayOffset, Color.red);
             }
         }
 

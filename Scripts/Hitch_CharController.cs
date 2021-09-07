@@ -7,34 +7,34 @@ public enum CameraModes{
     CUSTOM 
 }
 
-//[AddComponentMenu("Test")] // Changes the name in the component menu!!
+//[AddComponentMenu("Test")] // Changes the name in the component menu!!//
 [RequireComponent(typeof(Hitch_InputManager))]
-[RequireComponent(typeof(Hitch_CharMovement))]
 [RequireComponent(typeof(Hitch_CharAnimation))]
 public class Hitch_CharController : MonoBehaviour
 {
     
     public Hitch_CharacterVariables vars;
     public CameraSettings cameraSettings;
+    public PhysicsSettings physicsSettings;
     
     [HideInInspector] new public Camera camera;
     [HideInInspector] public GameObject player;
     [HideInInspector] public Transform cameraLookAt, cameraPivot;
     [HideInInspector] public Animator playerAnimator;
     [HideInInspector] public Hitch_InputManager controls;
-    [HideInInspector] public Hitch_CharMovement charMovement;
     [HideInInspector] public Hitch_CharAnimation charAnimation;
-    //[HideInInspector] Hitch_CameraPlayer cameraActorDefault;
+
+
     public CameraActor[] cameraTypes = new CameraActor[4];
     public CameraActor currentCamera;
     public CameraModes currentCamMode = CameraModes.THIRD_PERSON;
 
+    public TraversalFacade traversalFacade = new TraversalFacade();
 
     [HideInInspector] public Vector3 direction, resetPos, resetCameraPos;
     [HideInInspector] public float deltaTime;
 
     public bool startJump = false, sprintCondition = false, jumpCondition = false;
-    private float sprintTimer = 0;
     private float t = 0;
 
     public bool drawDebug = false;
@@ -55,8 +55,11 @@ public class Hitch_CharController : MonoBehaviour
         animationSetup();
 
         controls = GetComponent<Hitch_InputManager>();
-        charMovement = GetComponent<Hitch_CharMovement>();
-        
+
+        traversalFacade.setPhysicsBody(this.gameObject.transform);
+        traversalFacade.setPhysicsSettings(physicsSettings);
+        traversalFacade.setUp(); //done after as setUp requires the settings and transform first.
+
         resetPos = transform.position;
     }
     private void animationSetup()
@@ -87,16 +90,20 @@ public class Hitch_CharController : MonoBehaviour
 
         try
         {
-            charMovement.UpdateMovement();
+            
+            direction = currentCamera.transformToView(controls.inLeftH, Vector3.up);
+            direction = direction.normalized;
+            traversalFacade.refresh(direction, controls.jump, controls.sprinting, false);
         }
-        catch (Exception){
-            Debug.LogWarning("something from Update Movement");
+        catch (Exception e){
+            Debug.LogWarning("something from Update Movement: " + e.Message);
+            Debug.LogWarning("additional: " + e.StackTrace);
         }
         
         try
         {
-            charAnimation.UpdateState();
-            charAnimation.UpdateAnimation();
+            //charAnimation.UpdateState();
+            //charAnimation.UpdateAnimation();
         }
         catch (Exception e) {
             Debug.LogWarning("Animation error, probably had to divide by zero: " + e.Message);
@@ -116,28 +123,8 @@ public class Hitch_CharController : MonoBehaviour
     void UpdateState()
     {
         if (controls.restart) { transform.position = resetPos; }
-
-        direction = currentCamera.transformToView(controls.inLeftH, Vector3.up);
-        direction = direction.normalized;
-
-        //once startJump is on, it'll stay on. Gets turned off from animation.
-        if (charMovement.isGrounded()) {
-            if (controls.jump){
-                charMovement.Jump();
-            }
-        }
-
-        //stays on till you stop
-        if (!sprintCondition) sprintCondition = controls.sprinting;
-        else sprintTimer += deltaTime;
-
-        if (sprintTimer > 1.1f) {
-            sprintTimer = 1;
-            if (direction.magnitude == 0) { sprintCondition = false; sprintTimer = 0; }
-        }
-
-        
     }
+
     public bool getJumpCondition() {
         return jumpCondition;
     }
@@ -152,6 +139,8 @@ public class Hitch_CharController : MonoBehaviour
         return sprintCondition;
     }
 
+    public Vector3 getVelocity() => traversalFacade.getVelocity();
+    
     void OnDrawGizmos()
     {
         if (drawDebug) {
